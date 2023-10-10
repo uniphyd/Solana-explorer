@@ -1,0 +1,36 @@
+name: Mirror PR to private repo
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  mirror_pr:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Mirror PR to docs repo
+      env:
+        GITHUB_TOKEN: ${{ secrets.PRIVATE_REPO_TOKEN }}
+        PRIVATE_REPO: '<YourGitHubUsername>/docs'
+      run: |
+        # Use GitHub API to create PR on docs
+        # Extract necessary data from current PR
+        PR_BRANCH=${{ github.head_ref }}
+        PR_TITLE="${{ github.event.pull_request.title }}"
+        PR_BODY="${{ github.event.pull_request.body }}"
+        BASE_BRANCH=${{ github.event.pull_request.base.ref }}
+
+        # Use GitHub API to create the PR
+        curl -X POST \
+             -H "Authorization: token $GITHUB_TOKEN" \
+             -H "Accept: application/vnd.github.v3+json" \
+             https://api.github.com/repos/$PRIVATE_REPO/pulls \
+             -d '{
+                   "title": "'"${PR_TITLE}"'",
+                   "body": "'"${PR_BODY}"'",
+                   "head": "'"${PR_BRANCH}"'",
+                   "base": "'"${BASE_BRANCH}"'"
+                 }'
